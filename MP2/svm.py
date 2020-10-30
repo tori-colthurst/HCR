@@ -76,7 +76,7 @@ for cyclist in cyclist_data.values():
     flag_diff_cyclist = 0
 
     i = 2
-    while turned and i < len(x_val)-3:
+    while turned and i < len(x_val)-1:
     # for i in range(0, len(x_val)-1):
 
         t = float(times[i-2])
@@ -89,12 +89,12 @@ for cyclist in cyclist_data.values():
         feat = []
         dt = (float(times[i])-t)
 
-        x = float(x_val[i])
-        y = float(y_val[i])
+        x = float(x_val[i-2])
+        y = float(y_val[i-2])
         # z = float(z_val[i])
 
-        dx = (float(x - x_val[i-2]))
-        dy = (float(y - y_val[i-2]))
+        dx = (float(x_val[i])-x)
+        dy = (float(y_val[i])-y)
         # dz = (float(z_val[i+1])-z)
 
         v_x["curr"] = dx/dt
@@ -113,15 +113,15 @@ for cyclist in cyclist_data.values():
 
             if t >= turning_time[0] and t <= turning_time[1]:
                 label_turning.append(1)
-                feat_turned["1"].append(dx)
-                feat_turned["2"].append(dy)
-                feat_turned["3"].append(a_x)
+                feat_turned["1"].append(v_x["curr"])
+                feat_turned["2"].append(v_y["curr"])
+                feat_turned["3"].append(v_x["curr"])
             else:
                 label_turning.append(-1)
-                if a_x < 0.0000025:
-                    feat_not_turned["1"].append(dx)
-                    feat_not_turned["2"].append(dy)
-                    feat_not_turned["3"].append(a_x)
+                if abs(v_y["curr"]) < 0.02:
+                    feat_not_turned["1"].append(v_x["curr"])
+                    feat_not_turned["2"].append(v_y["curr"])
+                    feat_not_turned["3"].append(v_x["curr"])
 
         v_prev = v_cur
         v_x["prev"] = v_x["curr"]
@@ -140,9 +140,10 @@ Plot cyclist data using matplotlib.
 plt.figure(figsize=(8,6))
 plt.scatter(feat_turned["1"],feat_turned["2"], marker='+',color='green')
 plt.scatter(feat_not_turned["1"],feat_not_turned["2"],marker='_',color='red')
-plt.xlabel("velocity along the x axis")
-plt.ylabel("velocity along the y axis")
+plt.xlabel("velocity along the x axis (units unclear)")
+plt.ylabel("velocity along the y axis (units unclear)")
 plt.title("Velocity y vs. Velocity x")
+plt.legend(["Data while turning.", "Data while not turning."])
 plt.show()
 
 # fig = plt.figure()
