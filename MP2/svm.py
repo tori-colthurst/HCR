@@ -6,6 +6,7 @@ from sklearn.model_selection import train_test_split
 import numpy as np
 from sklearn.metrics import accuracy_score
 from sklearn.svm import SVC
+from mpl_toolkits.mplot3d import Axes3D
 
 """
 Grab cyclist trajectory data from dataset json files. Total of 1746 cyclists.
@@ -38,110 +39,128 @@ for filename in files:
 Features: current position (x,y,z), delta from old position (dx,dy,dz), current velocity (v), current acceleration (a)
 Labels: {'', 'foot_off_ground', 'grabbing_handle_right', 'releasing_handle_right', 'wait', 'tl', 'shoulder_check_right', 'start', 'hand_signal_left', 'releasing_handle_left', 'grabbing_handle_left', 'move', 'hand_signal_right', 'starting_movement', 'shoulder_check_left', 'pedaling', 'stop', 'tr', 'out_of_saddle', 'foot_on_ground'}
 """
-avg_acc = []
-avg_v = []
-avg_acc_r = []
-avg_v_r = []
 features_list = []
+feat_turned = {"1":[], "2":[], "3":[]}
+feat_not_turned = {"1":[], "2":[], "3":[]}
 label_turning = []
-label_signaling = []
-counting_cyclists = 1747#int(1746/2)
+max_cyclists = 1747
+total_diff_cyclists = 0
+
 for cyclist in cyclist_data.values():
-    counting_cyclists -= 1
-    if counting_cyclists % 20:
-        # print(counting_cyclists)
+
+    # only evaluate every 50 cyclists
+    max_cyclists -= 1
+    if max_cyclists % 50:
         continue
-    raised = -1
-    raising_time = (-1,-1)
+
+    # is this cyclist turning?
     turned = -1
     turning_time = (-1,-1)
     for label in cyclist["motion_primitives"]["mp_labels"]:
         l = label["mp_label"]
-        if raised ==-1 and (l == "hand_signal_left" or l == "hand_signal_right"):
-            raised = 1
-            raising_time = (float(label["start_time"]), float(label["end_time"]))
         if turned == -1 and (l == "tl" or l == "tr"):
             turned = 1
+            # capture the time they are turning
             turning_time = (float(label["start_time"]), float(label["end_time"]))
 
-    # print(turning_time)
-
-    v = 0
     v_prev = 0
     v_cur = 0
+    v_x = {"prev":0, "curr":0}
+    v_y = {"prev":0, "curr":0}
+
     acc = 0
     times = cyclist["trajectory"][0]["Timestamp"]
     x_val = cyclist["trajectory"][0]["x"]
     y_val = cyclist["trajectory"][0]["y"]
-    z_val = cyclist["trajectory"][0]["z"]
-    count = 0
-    for i in range(0, len(x_val)-1):
-        t = float(times[i])
-        # print(t)
-        if not turned or t < turning_time[0] - 10000000 or t > turning_time[1] + 10000000:
-            break
+    # z_val = cyclist["trajectory"][0]["z"]
+    flag_diff_cyclist = 0
+
+    i = 2
+    while turned and i < len(x_val)-3:
+    # for i in range(0, len(x_val)-1):
+
+        t = float(times[i-2])
+        if t < turning_time[0] - 1000000000*3 or t > turning_time[1] + 1000000000*3:
+            i += 3
+            continue
+
+        flag_diff_cyclist = 1
+
         feat = []
-        dt = (float(times[i+1])-t)
+        dt = (float(times[i])-t)
+
         x = float(x_val[i])
         y = float(y_val[i])
-        z = float(z_val[i])
-        dx = (float(x_val[i+1])-x)
-        dy = (float(y_val[i+1])-y)
-        dz = (float(z_val[i+1])-z)
-        v_x = dx/dt
-        v_y = dy/dt
-        v_z = dz/dt
-        v_cur = (v_x**2+v_y**2+v_z**2)**0.5
-        # v += v_cur
-        if i > 0:
+        # z = float(z_val[i])
+
+        dx = (float(x - x_val[i-2]))
+        dy = (float(y - y_val[i-2]))
+        # dz = (float(z_val[i+1])-z)
+
+        v_x["curr"] = dx/dt
+        v_y["curr"] = dy/dt
+        # v_z = dz/dt
+        v_cur = (v_x["curr"]**2+v_y["curr"]**2)**0.5
+
+        if i > 2:
             a = abs(v_cur-v_prev)/dt
-            # acc += a
-            # count += 1
-            feat = [x,y,z,dx,dy,dz,v_cur,a]
+            a_x = (v_x["curr"]-v_x["prev"])/dt
+            a_y = (v_y["curr"]-v_y["prev"])/dt
+
+            # feat = [x,y,dx,dy,v_cur,a]
+            feat = [dx,dy,v_x["curr"],v_y["curr"],a_x,a_y]
             features_list.append(feat)
+
             if t >= turning_time[0] and t <= turning_time[1]:
                 label_turning.append(1)
+                feat_turned["1"].append(dx)
+                feat_turned["2"].append(dy)
+                feat_turned["3"].append(a_x)
             else:
                 label_turning.append(-1)
-            label_signaling.append(raised)
-        v_prev = v_cur
+                if a_x < 0.0000025:
+                    feat_not_turned["1"].append(dx)
+                    feat_not_turned["2"].append(dy)
+                    feat_not_turned["3"].append(a_x)
 
-    # v = v*100/(count + 1)
-    # acc = acc*100000/count
-    # if raised:
-    #     avg_acc_r.append(acc)
-    #     avg_v_r.append(v)
-    # else:
-    #     avg_acc.append(acc)
-    #     avg_v.append(v)
-    #
+        v_prev = v_cur
+        v_x["prev"] = v_x["curr"]
+        v_y["prev"] = v_y["curr"]
+        i += 3
+
+    if flag_diff_cyclist:
+        total_diff_cyclists += 1
+
+
+print("TOTAL # DIFF CYCLISTS IN DATA: "+str(total_diff_cyclists))
 
 """
 Plot cyclist data using matplotlib.
 """
-# plt.figure(figsize=(8,6))
-# plt.scatter(avg_v,avg_acc,marker='+',color='green')
-# plt.scatter(avg_v_r,avg_acc_r,marker='_',color='red')
+plt.figure(figsize=(8,6))
+plt.scatter(feat_turned["1"],feat_turned["2"], marker='+',color='green')
+plt.scatter(feat_not_turned["1"],feat_not_turned["2"],marker='_',color='red')
+plt.xlabel("velocity along the x axis")
+plt.ylabel("velocity along the y axis")
+plt.title("Velocity y vs. Velocity x")
+plt.show()
+
+# fig = plt.figure()
+# ax = fig.add_subplot(111, projection='3d')
+# ax.scatter(feat_turned["1"], feat_turned["2"], feat_turned["3"], marker='+',color='green')
+# ax.scatter(feat_not_turned["1"], feat_not_turned["2"], feat_not_turned["3"], marker='_',color='red')
 # plt.show()
+
 
 """
 Training vs. Testing data split
 """
-## Extract the target values
-# df = df.drop(['SepalWidthCm','PetalWidthCm'],axis=1)
-# Y = []
-# target = df['Species']
-# for val in target:
-#     if(val == 'Iris-setosa'):
-#         Y.append(-1)
-#     else:
-#         Y.append(1)
-# df = df.drop(['Species'],axis=1)
-# X = df.values.tolist()
+## Extract the target values / trim input data
 X = features_list
 Y = label_turning
+
 print(len(X))
-# print(len(Y))
+
 ## Shuffle and split the data into training and test set
 X, Y = shuffle(X,Y)
 x_train = []
@@ -157,21 +176,22 @@ x_test = np.array(x_test)
 y_test = np.array(y_test)
 
 print(len(x_test))
-print(y_test)
-
-# y_train = y_train.reshape(90,1)
-# y_test = y_test.reshape(10,1)
+# print(y_test)
 
 """
 We can use the Scikit learn library and just call the related functions to implement the SVM model.
 """
-clf = SVC(kernel='linear')
-clf.fit(x_train,y_train)
-y_pred = clf.predict(x_test)
-score = accuracy_score(y_test,y_pred)
-print("ACCURACY: "+str(score))
+# clf = SVC(kernel='linear')
+# clf.fit(x_train,y_train)
+# y_pred = clf.predict(x_test)
+# score = accuracy_score(y_test,y_pred)
+# print("ACCURACY: "+str(score))
 
 
+
+"""
+Reference of SVM implementation from scratch(ish).
+"""
 def SVM_whole():
     """
     Support Vector Machine
