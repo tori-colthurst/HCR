@@ -106,5 +106,5 @@ freq = cv.getTickFrequency() / 1000
 cv.putText(frame, '%.2fms' % (t / freq), (10, 20), cv.FONT_HERSHEY_SIMPLEX, 0.75, (255, 255, 255),2,cv.LINE_AA)
 
 cv.imshow(kwinName, frame)
+cv.waitKey(0)
 cv.imwrite('result_'+args.input,frame)
-input("Press any key to close...")
