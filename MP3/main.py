@@ -4,6 +4,7 @@ import os
 import sys
 import time
 from argparse import ArgumentParser
+import robot
 
 # majority of code obtained from https://github.com/philtabor/Actor-Critic-Methods-Paper-To-Code
 
@@ -65,28 +66,36 @@ def main(args):
     env.unwrapped.viewer.window.on_key_press = key_press
     env.unwrapped.viewer.window.on_key_release = key_release
     global do_user_action, user_action, main_engine, left_right_engine
+
     for i in range(args.num_episodes):
         state = env.reset()
         total_reward = 0
 
         prev_action = None
         keypress_cntr = 0.0
+        next_state = [0]*8
+
+        r = robot.robot()
+        action = [0.0, 0.0]
 
         while True:
 
             my_action = [0.0, 0.0]
+            a = ""
             if do_user_action:
 
                 # "acceleration" logic
                 # the more number of time steps a key remains pressed, the power of engine is increased
-                if user_action == 0:
+                if user_action == 0: # up, w
+                    a = "up"
                     my_action[0] = 0.0
                     my_action[1] = 0.0
 
                     prev_action = 0
                     keypress_cntr = 0.0
 
-                elif user_action == 3:
+                elif user_action == 3: # left, a
+                    a = "left"
                     my_action[0] = 0.0
                     my_action[1] = 0.5
 
@@ -102,7 +111,8 @@ def main(args):
                     if my_action[1] > 1.0:
                         my_action[1] = 1.0
 
-                elif user_action == 2:
+                elif user_action == 2: # down, s
+                    a = "down"
                     my_action[0] = 0.5
                     my_action[1] = 0.0
 
@@ -118,7 +128,8 @@ def main(args):
                     if my_action[0] > 1.0:
                         my_action[0] = 1.0
 
-                elif user_action == 1:
+                elif user_action == 1: # right, d
+                    a = "right"
                     my_action[0] = 0.0
                     my_action[1] = -0.5
 
@@ -141,8 +152,9 @@ def main(args):
                     prev_action = 0
                     keypress_cntr = 0.0
 
-            next_state, reward, done, info = env.step(my_action)
-            print('next state: '+str(next_state))
+            action = r.update(next_state, a)
+            next_state, reward, done, info = env.step(action)
+            # print('next state: '+str(next_state))
 
             total_reward += reward
             env.render()
@@ -161,19 +173,3 @@ if __name__ == "__main__":
                         help='number of episodes for training')
     args = parser.parse_args()
     main(args)
-
-''' Notes:
-
-pos = self.lander.position
-vel = self.lander.linearVelocity
-state = [
-            (pos.x - VIEWPORT_W/SCALE/2) / (VIEWPORT_W/SCALE/2),
-            (pos.y - (self.helipad_y+LEG_DOWN/SCALE)) / (VIEWPORT_H/SCALE/2),
-vel.x*(VIEWPORT_W/SCALE/2)/FPS,
-vel.y*(VIEWPORT_H/SCALE/2)/FPS,
-self.lander.angle,
-20.0*self.lander.angularVelocity/FPS,
-1.0 if self.legs[0].ground_contact else 0.0,
-1.0 if self.legs[1].ground_contact else 0.0
-            ]
-'''
