@@ -165,6 +165,7 @@ def main(args):
             time.sleep(0.05)
 
     env.close()
+    r.get_error()
 
 
 if __name__ == "__main__":

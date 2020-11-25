@@ -20,6 +20,13 @@ class robot:
     def __init__(self):
         self.x = 0.0
         self.y = 1.0
+        self.avg_err_x = 0.0
+        self.avg_err_y = 0.0
+        self.avg_err_ang = 0.0
+        self.count = 0
+
+        self.toggle = 1
+        self.step_size = 0.02
 
     # clockwise = negative
     # counterclockwise = positive
@@ -38,20 +45,24 @@ class robot:
         y_target = self.y
 
         if user_action == "left": # positive
-            x_target = self.x - 0.01
+            x_target = self.x - self.step_size
             y_target = self.y
         elif user_action == "right":
-            x_target = self.x + 0.01
+            x_target = self.x + self.step_size
             y_target = self.y
         elif user_action == "up":
             x_target = self.x
-            y_target = self.y + 0.01
+            y_target = self.y + self.step_size
         elif user_action == "down":
             x_target = self.x
-            y_target = self.y - 0.01
+            y_target = self.y - self.step_size
 
         self.x = x_target
         self.y = y_target
+
+        if self.toggle > 0:
+            self.count_err(x0, y0, angle)
+            self.toggle = -self.toggle
 
         b = self.balance(angle, angular_vel, y0, y_vel, x0, x_vel, x_target, y_target)
         return b
@@ -61,7 +72,6 @@ class robot:
     def balance(self, ang, ang_v, y, y_vel, x, x_vel, x_target, y_target):
         # p = p_0 + v_0*t + 0.5*a*t^2
         # a = (p - p_0 - v_0) / (0.5)
-
         t = 0.5
         scale = 1.0
 
@@ -78,3 +88,22 @@ class robot:
         action = [main_engine, left_right_engine]
 
         return action
+
+    def get_error(self):
+
+        self.avg_err_x /= self.count
+        self.avg_err_y /= self.count
+        self.avg_err_ang /= self.count
+
+        print("AVG ERRORS: ")
+        print("X: "+str(self.avg_err_x))
+        print("Y: "+str(self.avg_err_y))
+        print("ANG: "+str(self.avg_err_ang))
+
+    def count_err(self, x0, y0, angle):
+
+        self.avg_err_x += abs(self.x-x0)
+        self.avg_err_y += abs(self.y-y0)
+        self.avg_err_ang += abs(angle)
+
+        self.count += 1
