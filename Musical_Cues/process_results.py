@@ -49,27 +49,51 @@ def plot_y(hand_y, peaks):
 def get_beats(num_frames):
 	ret = []
 
-	# max_y = max(right_hand.items(), key=lambda x:x[1][1])
-	# max_x = max(right_hand.items(), key=lambda x:x[1][0])
-	# min_x = min(right_hand.items(), key=lambda x:x[1][0])
-
-	# Calculate and find peaks
-	# RightHandY = list(right_hand.values())
+	# Calculate and find peaks - both negative and positive
+	RightHandX = [x[0] for x in right_hand]
 	RightHandY = [x[1] for x in right_hand]
+	mean = float(sum(RightHandX))/float(len(RightHandX))
+	x_pos_peaks, prop = find_peaks(RightHandX, height=mean)
 	mean = float(sum(RightHandY))/float(len(RightHandY))
-	pos_peaks, prop = find_peaks(RightHandY, height=mean)
+	y_pos_peaks, prop = find_peaks(RightHandY, height=mean)
 
+	RightHandXNeg = [-1 * x[0] for x in right_hand]
+	RightHandYNeg = [-1 * x[1] for x in right_hand]
+	mean = float(sum(RightHandXNeg))/float(len(RightHandXNeg))
+	x_neg_peaks, prop = find_peaks(RightHandXNeg, height=mean)
+	mean = float(sum(RightHandYNeg))/float(len(RightHandYNeg))
+	y_neg_peaks, prop = find_peaks(RightHandYNeg, height=mean)
+
+	x_neg_peaks = list(x_neg_peaks)
+	y_neg_peaks = list(y_neg_peaks)
+	x_pos_peaks = list(x_pos_peaks)
+	y_pos_peaks = list(y_pos_peaks)
+	all_peaks = x_pos_peaks + x_neg_peaks + y_pos_peaks + y_neg_peaks
 	# plot each peak as a red dot and plot y movement
-	plot_y(RightHandY, pos_peaks)
+	# plot_y(RightHandY, y_pos_peaks + y_neg_peaks)
+	# plot_y(RightHandX, x_pos_peaks + x_neg_peaks)
 
-	return pos_peaks
+	# Convert to num_frames size array
+	# 1 = beat, 0 = no beat
+	for i in range(num_frames):
+		if i in all_peaks:
+			ret.append(1)
+		else:
+			ret.append(0)
+
+	return ret
 
 def process_data(frame_points, num_frames):
 	for i in range(0, num_frames):
 		right_hand.append(frame_points[i][BODY_PARTS["RWrist"] - 1])
 
-	graph_data(frame_points, num_frames)
+	# graph_data(frame_points, num_frames)
 	return get_beats(num_frames)
 
-points = np.load('cheetah_pose_points.npy', allow_pickle=True)
-graph_data(points, 1500)
+if __name__ == "__main__":
+	num_frames = 100
+	points = np.load('cheetah_pose_points.npy', allow_pickle=True)
+	for i in range(0, 100):
+		right_hand.append(points[i][BODY_PARTS["RWrist"] - 1])
+	# graph_data(points, 100)
+	x = get_beats(100)
