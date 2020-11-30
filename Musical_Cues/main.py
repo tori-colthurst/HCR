@@ -27,12 +27,10 @@ def main(npy_file, video_file):
     smooth_x_r_wrist = []
     smooth_y_r_wrist = []
 
-    counter = 0
-
     for frame in video_obj.frames:
         # right elbow
-        # if frame[right_elbow] is not None:
-        #     r_elb = video_obj.smooth(frame[right_elbow][0], frame[right_elbow][1], right_elbow)
+        if frame[right_elbow] is not None:
+            r_elb = video_obj.smooth(frame[right_elbow][0], frame[right_elbow][1], right_elbow)
         # right wrist
         if frame[right_wrist] is not None:
             r_wrist = video_obj.smooth(frame[right_wrist][0], frame[right_wrist][1], right_wrist)
@@ -41,17 +39,18 @@ def main(npy_file, video_file):
             smooth_x_r_wrist.append(r_wrist[0])
             smooth_y_r_wrist.append(r_wrist[1])
 
-        counter += 1
-        # if counter > 100:
-        #     break
         # left elbow
-        # if frame[left_elbow] is not None:
-        #     l_elb = video_obj.smooth(frame[left_elbow][0], frame[left_elbow][1], left_elbow)
-        # # left wrist
-        # if frame[left_wrist] is not None:
-        #     l_wrist = video_obj.smooth(frame[left_wrist][0], frame[left_wrist][1], left_wrist)
+        if frame[left_elbow] is not None:
+            l_elb = video_obj.smooth(frame[left_elbow][0], frame[left_elbow][1], left_elbow)
+        # left wrist
+        if frame[left_wrist] is not None:
+            l_wrist = video_obj.smooth(frame[left_wrist][0], frame[left_wrist][1], left_wrist)
 
-    plot_example(original_x_r_wrist, original_y_r_wrist, smooth_x_r_wrist, smooth_y_r_wrist)
+        video_obj.draw_frame()
+
+    cv2.destroyAllWindows()
+
+    # plot_example(original_x_r_wrist, original_y_r_wrist, smooth_x_r_wrist, smooth_y_r_wrist)
 
 if __name__ == "__main__":
 
