@@ -45,8 +45,9 @@ class video:
 		self.right_wrist_x_v = 0
 		self.right_wrist_y_v = 1
 		self.beat_count = 0
+		self.last_beat = 0
 		self.tempo = 0
-		self.fps = 25
+		self.fps = 24
 
 		# self.heavy_window = 24*1
 		# self.articulation_status = [0]*self.heavy_window
@@ -193,7 +194,6 @@ class video:
 			cv2.putText(img, "style: steady", (10,40), font, 0.5, (0,255,0), 1, cv2.LINE_AA)
 
 		if beat == 1:
-			self.beat_count += 1
 			cv2.putText(img, "Beat", (10,60), font, 0.5, (0,255,0), 1, cv2.LINE_AA)
 		elif beat == 0:
 			cv2.putText(img, "No Beat", (10,60), font, 0.5, (0,255,0), 1, cv2.LINE_AA)
@@ -205,7 +205,7 @@ class video:
 		#     if abs(self.frames[i][self.right_wrist][1] - self.new_frames[i][self.right_wrist][1]) > 50:
 		# if i % 24 == 0:
 		cv2.imshow('image', img)
-		cv2.waitKey(400)
+		cv2.waitKey(100)
 		# cv2.destroyAllWindows()
 
 		self.draw_idx += 1
@@ -327,6 +327,9 @@ class video:
 		v_x, v_y = self.velocity_right()
 		# print(v_x)
 
+		if self.draw_idx - self.last_beat <= 7:
+			return 0
+
 		if v_x < 0 and self.right_wrist_x_v > 0:
 			x_change = True
 			self.right_wrist_x_v = v_x
@@ -346,13 +349,16 @@ class video:
 				self.right_wrist_x_v = v_x
 			if v_y == 0:
 				self.right_wrist_y_v = v_y
+			self.last_beat = self.draw_idx
+			self.beat_count += 1
 			return 1
 
 		return 0
 
 	def tempo_calc(self):
 		if self.draw_idx % self.fps == 0:
-			self.tempo = self.fps * self.beat_count
+			print(self.beat_count)
+			self.tempo = int(self.beat_count * 60)
 			self.beat_count = 0
 
 
