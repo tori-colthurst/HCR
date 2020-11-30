@@ -2,6 +2,7 @@ import numpy as np
 import cv2
 import argparse
 import process_results as pr
+import process_data as pd
 
 '''
 read_video()
@@ -122,19 +123,25 @@ def main():
 					cv2.ellipse(frame, points[idTo], (4, 4), 0, 0, 360, (255, 255, 255), cv2.FILLED)
 					cv2.putText(frame, str(idFrom), points[idFrom], cv2.FONT_HERSHEY_SIMPLEX, 0.75, (255, 255, 255),2,cv2.LINE_AA)
 					cv2.putText(frame, str(idTo), points[idTo], cv2.FONT_HERSHEY_SIMPLEX, 0.75, (255, 255, 255),2,cv2.LINE_AA)
-			# out_vid.write(frame)
 
-		frames_points_np = np.array(frames_points)
-		peaks = pr.process_data(frames_points_np, frame_num)
-		for i in range(frame_num):
-			frame = video_frames[i]
-			if peaks[i] == 1:
+			beat = pd.compile_data(frames_points, frame_num)
+			if beat:
 				cv2.putText(frame, "Beat", (int(frameWidth / 2), frameHeight - 20), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (255, 255, 255),2,cv2.LINE_AA)
 			else:
 				cv2.putText(frame, "No Beat", (int(frameWidth / 2), frameHeight - 20), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (255, 255, 255),2,cv2.LINE_AA)
 			out_vid.write(frame)
 
 		out_vid.release()
+
+		frames_points_np = np.array(frames_points)
+		# peaks = pr.process_data(frames_points_np, frame_num)
+		# for i in range(frame_num):
+		# 	frame = video_frames[i]
+		# 	if peaks[i] == 1:
+		# 		cv2.putText(frame, "Beat", (int(frameWidth / 2), frameHeight - 20), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (255, 255, 255),2,cv2.LINE_AA)
+		# 	else:
+		# 		cv2.putText(frame, "No Beat", (int(frameWidth / 2), frameHeight - 20), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (255, 255, 255),2,cv2.LINE_AA)
+		# 	out_vid.write(frame)
 
 		with open(args.video_path+'_points.npy', 'wb') as f:
 			np.save(f, frames_points_np)
