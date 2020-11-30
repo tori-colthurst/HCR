@@ -1,6 +1,7 @@
 import sys
 from video_class import video
 import matplotlib.pyplot as plt
+import cv2
 
 def plot_example(orignalx, originaly, smoothx, smoothy):
     plt.scatter(orignalx, originaly, color='red')
