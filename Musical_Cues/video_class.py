@@ -44,11 +44,15 @@ class video:
 
 		self.right_wrist_x_v = 0
 		self.right_wrist_y_v = 1
-		self.beat_count = 0
+		# self.beat_count = 0
 		self.last_beat = 0
 		self.tempo = 0
 		self.fps = 24
-
+		self.num_sec = 3
+		self.curr_num_sec = 0
+		self.beat_window = np.zeros(self.num_sec)
+		self.beat_window.fill(-1)
+		self.beat_idx = 0
 		# self.heavy_window = 24*1
 		# self.articulation_status = [0]*self.heavy_window
 		# self.articulation_idx = 0
@@ -64,7 +68,7 @@ class video:
 		i = self.window_idx
 		self.window[point][0][i] = x
 		self.window[point][1][i] = y
-		print((x,y))
+		# print((x,y))
 		# print(self.window[point])
 
 		# calculate window average
@@ -175,37 +179,38 @@ class video:
 		tup = (int(self.new_frames[i][self.left_elbow][0]), int(self.new_frames[i][self.left_elbow][1]))
 		cv2.circle(img, tup, 10, (0,0,255), -1)
 
-		cres = self.de_crescendo()
-		art = self.articulation()
-		beat = self.beats()
+		if self.draw_idx > 7190:
+			cres = self.de_crescendo()
+			art = self.articulation()
+			beat = self.beats()
 
-		if cres == -1:
-			cv2.putText(img, "volume: decrescendo", (10,20), font, 0.5, (0,255,0), 1, cv2.LINE_AA)
-		elif cres == 1:
-			cv2.putText(img, "volume: crescendo", (10,20), font, 0.5, (0,255,0), 1, cv2.LINE_AA)
-		else:
-			cv2.putText(img, "volume: ", (10,20), font, 0.5, (0,255,0), 1, cv2.LINE_AA)
+			if cres == -1:
+				cv2.putText(img, "volume: decrescendo", (10,20), font, 0.5, (0,255,0), 1, cv2.LINE_AA)
+			elif cres == 1:
+				cv2.putText(img, "volume: crescendo", (10,20), font, 0.5, (0,255,0), 1, cv2.LINE_AA)
+			else:
+				cv2.putText(img, "volume: ", (10,20), font, 0.5, (0,255,0), 1, cv2.LINE_AA)
 
-		if art == 0:
-			cv2.putText(img, "style: lighter", (10,40), font, 0.5, (0,255,0), 1, cv2.LINE_AA)
-		elif art == 1:
-			cv2.putText(img, "style: heavier", (10,40), font, 0.5, (0,255,0), 1, cv2.LINE_AA)
-		else:
-			cv2.putText(img, "style: steady", (10,40), font, 0.5, (0,255,0), 1, cv2.LINE_AA)
+			if art == 0:
+				cv2.putText(img, "style: lighter", (10,40), font, 0.5, (0,255,0), 1, cv2.LINE_AA)
+			elif art == 1:
+				cv2.putText(img, "style: heavier", (10,40), font, 0.5, (0,255,0), 1, cv2.LINE_AA)
+			else:
+				cv2.putText(img, "style: steady", (10,40), font, 0.5, (0,255,0), 1, cv2.LINE_AA)
 
-		if beat == 1:
-			cv2.putText(img, "Beat", (10,60), font, 0.5, (0,255,0), 1, cv2.LINE_AA)
-		elif beat == 0:
-			cv2.putText(img, "No Beat", (10,60), font, 0.5, (0,255,0), 1, cv2.LINE_AA)
+			if beat == 1:
+				cv2.putText(img, "Beat", (10,60), font, 0.5, (0,255,0), 1, cv2.LINE_AA)
+			elif beat == 0:
+				cv2.putText(img, "No Beat", (10,60), font, 0.5, (0,255,0), 1, cv2.LINE_AA)
 
-		self.tempo_calc()
-		cv2.putText(img, str(self.tempo), (10,80), font, 0.5, (0,255,0), 1, cv2.LINE_AA)
+			self.tempo_calc()
+			cv2.putText(img, str(self.tempo), (10,80), font, 0.5, (0,255,0), 1, cv2.LINE_AA)
 
-		# if self.frames[i] is not None and self.frames[i][self.right_wrist] is not None:
-		#     if abs(self.frames[i][self.right_wrist][1] - self.new_frames[i][self.right_wrist][1]) > 50:
-		# if i % 24 == 0:
-		cv2.imshow('image', img)
-		cv2.waitKey(100)
+			# if self.frames[i] is not None and self.frames[i][self.right_wrist] is not None:
+			#     if abs(self.frames[i][self.right_wrist][1] - self.new_frames[i][self.right_wrist][1]) > 50:
+			# if i % 24 == 0:
+			cv2.imshow('image', img)
+			cv2.waitKey(40)
 		# cv2.destroyAllWindows()
 
 		self.draw_idx += 1
@@ -289,7 +294,7 @@ class video:
 		if avg < Lavg-4000:
 			# self.articulation_status[self.articulation_idx] = 0
 			return 0 # lighter
-		elif avg > Lavg+4000:
+		elif avg > Lavg+2500:
 			# self.articulation_status[self.articulation_idx] = 1
 			return 1 # heavier
 		else:
@@ -310,57 +315,79 @@ class video:
 
 		if self.draw_idx >= delta:
 			upper = self.new_frames[self.draw_idx][self.right_wrist][0]
-			lower = self.new_frames[self.draw_idx-delta][self.right_wrist][0]
-			curr_vel_x = (upper - lower) / (delta + 1)
+			lower = self.new_frames[self.draw_idx-delta+1][self.right_wrist][0]
+			extra_low = self.new_frames[self.draw_idx-delta*2+1][self.right_wrist][0]
+			curr_vel_x = (upper - lower) / (delta)
+			prev_vel_x = (lower - extra_low) / delta*2
 
 			upper = self.new_frames[self.draw_idx][self.right_wrist][1]
-			lower = self.new_frames[self.draw_idx-delta][self.right_wrist][1]
-			curr_vel_y = (upper - lower) / (delta + 1)
+			lower = self.new_frames[self.draw_idx-delta+1][self.right_wrist][1]
+			extra_low = self.new_frames[self.draw_idx-delta*2+1][self.right_wrist][1]
+			curr_vel_y = (upper - lower) / (delta)
+			prev_vel_y = (lower - extra_low) / delta*2
 
-			return (curr_vel_x, curr_vel_y)
+			return curr_vel_x, curr_vel_y, prev_vel_x, prev_vel_y
 		else:
-			return (0, 0)
+			return 0, 0, 0, 0
 
 	def beats(self):
 		x_change = False
 		y_change = False
-		v_x, v_y = self.velocity_right()
+		v_x, v_y, pv_x, pv_y = self.velocity_right()
 		# print(v_x)
 
 		if self.draw_idx - self.last_beat <= 7:
 			return 0
 
-		if v_x < 0 and self.right_wrist_x_v > 0:
-			x_change = True
-			self.right_wrist_x_v = v_x
-		elif v_x > 0 and self.right_wrist_x_v < 0:
-			x_change = True
-			self.right_wrist_x_v = v_x
+		tempo = 1
+		# print((v_x, v_y))
 
-		if v_y < 0 and self.right_wrist_y_v > 0:
+		# if v_x < 0 and self.right_wrist_x_v > 0:
+		if v_x < -tempo and pv_x > tempo:
+			x_change = True
+			# self.right_wrist_x_v = v_x
+		# elif v_x > 0 and self.right_wrist_x_v < 0:
+		elif v_x > tempo and pv_x < -tempo:
+			x_change = True
+			# self.right_wrist_x_v = v_x
+
+		if v_y < -tempo and pv_y > tempo:
 			y_change = True
-			self.right_wrist_y_v = v_y
-		elif v_y > 0 and self.right_wrist_y_v < 0:
+			# self.right_wrist_y_v = v_y
+		elif v_y > tempo and pv_y < -tempo:
 			y_change = True
-			self.right_wrist_y_v = v_y
+			# self.right_wrist_y_v = v_y
 
 		if x_change or y_change:
-			if v_x == 0:
-				self.right_wrist_x_v = v_x
-			if v_y == 0:
-				self.right_wrist_y_v = v_y
+			# if v_x == 0:
+			# 	self.right_wrist_x_v = v_x
+			# if v_y == 0:
+			# 	self.right_wrist_y_v = v_y
 			self.last_beat = self.draw_idx
-			self.beat_count += 1
+			# self.beat_count += 1
+			if self.beat_window[self.beat_idx] == -1:
+				self.beat_window[self.beat_idx] = 1
+			else:
+				self.beat_window[self.beat_idx] += 1
 			return 1
 
 		return 0
 
 	def tempo_calc(self):
+		count = 0
+		beat_count = 0
+		for i in range(0, self.num_sec):
+			if self.beat_window[i] > -1:
+				count += 1
+				beat_count += self.beat_window[i]
+		if count > 0 and self.draw_idx % self.fps == 0:
+			# print(self.beat_count)
+			self.tempo = int(beat_count * 60/count)
+			# self.beat_count = 0
 		if self.draw_idx % self.fps == 0:
-			print(self.beat_count)
-			self.tempo = int(self.beat_count * 60)
-			self.beat_count = 0
-
+			print(self.beat_window)
+			self.beat_idx = (self.beat_idx+1)%self.num_sec
+			self.beat_window[self.beat_idx] = -1
 
 ##### calculate running average
 # prev_avg_x = self.running_avg[point][0]
