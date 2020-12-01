@@ -198,18 +198,20 @@ class video:
 		else:
 			cv2.putText(img, "style: steady", (10,40), font, 0.5, (0,255,0), 1, cv2.LINE_AA)
 
-		if beat == 1:
-			cv2.putText(img, "Beat", (10,60), font, 0.5, (0,255,0), 1, cv2.LINE_AA)
-		elif beat == 0:
-			cv2.putText(img, "No Beat", (10,60), font, 0.5, (0,255,0), 1, cv2.LINE_AA)
+		# if beat == 1:
+		# 	cv2.putText(img, "Beat", (10,60), font, 0.5, (0,255,0), 1, cv2.LINE_AA)
+		# elif beat == 0:
+		# 	cv2.putText(img, "No Beat", (10,60), font, 0.5, (0,255,0), 1, cv2.LINE_AA)
 
 		self.tempo_calc()
-		cv2.putText(img, str(self.tempo), (10,80), font, 0.5, (0,255,0), 1, cv2.LINE_AA)
+		cv2.putText(img, "BPM: "+str(self.tempo), (10,80), font, 0.5, (0,255,0), 1, cv2.LINE_AA)
 
 		if self.draw_idx < self.last_beat + 3:
-			cv2.circle(img, (92, 70), 10, (0,255,0), -1)
+			cv2.putText(img, "Beat", (10,60), font, 0.5, (0,255,0), 1, cv2.LINE_AA)
+			cv2.circle(img, (90, 55), 10, (0,255,0), -1)
 		else:
-			cv2.circle(img, (92, 70), 10, (0,0,255), -1)
+			cv2.putText(img, "No Beat", (10,60), font, 0.5, (0,0,255), 1, cv2.LINE_AA)
+			cv2.circle(img, (90, 55), 10, (0,0,255), -1)
 
 		# if self.frames[i] is not None and self.frames[i][self.right_wrist] is not None:
 		#     if abs(self.frames[i][self.right_wrist][1] - self.new_frames[i][self.right_wrist][1]) > 50:
@@ -296,10 +298,10 @@ class video:
 		avg, Lavg = self.trapezoid_area()
 		# print("Area: "+str(area))
 
-		if avg < Lavg-4000:
+		if avg < Lavg-5000:
 			# self.articulation_status[self.articulation_idx] = 0
 			return 0 # lighter
-		elif avg > Lavg+2500:
+		elif avg > Lavg+3000:
 			# self.articulation_status[self.articulation_idx] = 1
 			return 1 # heavier
 		else:

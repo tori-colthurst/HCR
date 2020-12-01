@@ -51,6 +51,12 @@ def main(npy_file, video_file):
 
     cv2.destroyAllWindows()
 
+    # fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    # out_vid = cv2.VideoWriter('cheetah_smoothed.mp4', fourcc, 24.0, (video_obj.picture_frames[0].shape[1],video_obj.picture_frames[0].shape[0]))
+    # for frame in video_obj.picture_frames:
+    #     out_vid.write(frame)
+    # out_vid.release()
+
     # plot_example(original_x_r_wrist, original_y_r_wrist, smooth_x_r_wrist, smooth_y_r_wrist)
 
 if __name__ == "__main__":
